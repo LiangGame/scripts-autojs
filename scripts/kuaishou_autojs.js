@@ -583,32 +583,33 @@ const TaskWatchAds = {
 
         // 确认是否是在"任务中心页面"
         if (this.checkInMoneyPage()) {
-            log("检测到当前在任务中心页面，判断是否需要冷却");
+            log("检测到当前在任务中心页面，点击「领福利」执行任务");
             // 点击领福利按钮
             if (!this.clickRewardButton("领福利")) {
-                log("未找到领福利按钮，任务终止");
-            } else if (this.clickRewardButton("冷却中")) {
-                log("检测到当前在冷却中，切换到任务2并等待5分钟后重试");
-                // 暂时禁用当前任务并启用任务2
-                config.tasks.watchAds.enabled = false;
-                config.tasks.task2.enabled = true;
-                
-                // 等待5分钟
-                for (let i = 5; i > 0; i--) {
-                    log("还剩 " + i + " 分钟重新检查任务1状态");
-                    sleep(60000); // 等待1分钟
-                }
-                
-                log("5分钟已到，重新检查任务1状态");
-                // 重新进入赚钱页面
-                if (enterMoneyPage()) {
-                    // 检查是否仍在冷却
-                    if (!this.clickRewardButton("冷却中")) {
-                        log("冷却已结束，重新启用任务1");
-                        config.tasks.watchAds.enabled = true;
-                        config.tasks.task2.enabled = false;
-                    } else {
-                        log("任务1仍在冷却中，继续执行任务2");
+                log("未找到领福利按钮，判断是否在冷却中");
+                if (this.clickRewardButton("冷却中")) {
+                    log("检测到当前在冷却中，切换到任务2并等待5分钟后重试");
+                    // 暂时禁用当前任务并启用任务2
+                    config.tasks.watchAds.enabled = false;
+                    config.tasks.task2.enabled = true;
+                    
+                    // 等待5分钟
+                    for (let i = 5; i > 0; i--) {
+                        log("还剩 " + i + " 分钟重新检查任务1状态");
+                        sleep(60000); // 等待1分钟
+                    }
+                    
+                    log("5分钟已到，重新检查任务1状态");
+                    // 重新进入赚钱页面
+                    if (enterMoneyPage()) {
+                        // 检查是否仍在冷却
+                        if (!this.clickRewardButton("冷却中")) {
+                            log("冷却已结束，重新启用任务1");
+                            config.tasks.watchAds.enabled = true;
+                            config.tasks.task2.enabled = false;
+                        } else {
+                            log("任务1仍在冷却中，继续执行任务2");
+                        }
                     }
                 }
             }
