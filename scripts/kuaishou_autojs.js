@@ -1217,13 +1217,21 @@ Task3.execute = function() {
     
     // 查找"点赞x个作品"文本
     log("查找'点赞x个作品'文本");
-    var likeTaskText = null;
+    // 获取屏幕尺寸
+    let screenWidth = device.width;
+    let screenHeight = device.height;
+    // 定义中间区域的范围（屏幕中间60%的区域）
+    let middleRegion = {
+        left: screenWidth * 0.2,
+        top: screenHeight * 0.2,
+        right: screenWidth * 0.8,
+        bottom: screenHeight * 0.8
+    };
     
     // 尝试查找包含"点赞"和"作品"的文本
-    var likeTexts = textMatches(/点赞.*作品/).find();
-    if (likeTexts.length > 0) {
+    var likeTaskText = textMatches(/点赞.*作品/).findOne();
+    if (likeTaskText.visibleToUser() && isInMiddleRegion(likeTaskText, middleRegion)) {
         log("找到点赞任务文本");
-        likeTaskText = likeTexts[0];
     } else {
         // 如果没找到，尝试滑动查找
         log("未找到点赞任务文本，尝试滑动查找");
@@ -1231,10 +1239,9 @@ Task3.execute = function() {
             randomSwipe(device.width / 2, device.height * 0.7, device.width / 2, device.height * 0.3, 500);
             randomSleep(1000, 2000);
             
-            likeTexts = textMatches(/点赞.*作品/).find();
-            if (likeTexts.length > 0) {
+            likeTaskText = textMatches(/点赞.*作品/).findOne();
+            if (likeTaskText.visibleToUser() && isInMiddleRegion(likeTaskText, middleRegion)) {
                 log("滑动后找到点赞任务文本");
-                likeTaskText = likeTexts[0];
                 break;
             }
         }
