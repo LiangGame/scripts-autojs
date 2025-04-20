@@ -1,0 +1,67 @@
+// 应用功能模块
+var Utils = require("./utils.js");
+
+var App = {
+  // 启动快手极速版
+  launch: function () {
+    Utils.log("启动快手极速版");
+    if (currentPackage().includes("com.kuaishou.nebula")) {
+      Utils.log("快手极速版已经在运行中");
+      return true;
+    }
+
+    app.launch("com.kuaishou.nebula");
+    sleep(5000);
+
+    if (currentPackage().includes("com.kuaishou.nebula")) {
+      Utils.log("快手极速版启动成功");
+      return true;
+    }
+    Utils.log("快手极速版启动失败");
+    return false;
+  },
+
+  // 检查登录状态
+  checkLogin: function () {
+    Utils.log("检查登录状态");
+    if (text("登录").exists()) {
+      Utils.log("未登录状态，请先登录");
+      return false;
+    }
+    Utils.log("已登录状态");
+    return true;
+  },
+
+  // 进入赚钱页面
+  enterMoneyPage: function () {
+    Utils.log("尝试进入赚钱页面");
+    var moneyButton = desc("去赚钱").findOne(3000);
+    if (moneyButton) {
+      Utils.log("找到'去赚钱'按钮，尝试点击");
+      moneyButton.click();
+      Utils.log("点击'去赚钱'按钮完成");
+
+      Utils.log("等待赚钱页面加载...");
+      var success = false;
+
+      if (
+        textContains("看广告得金币").findOne(5000) ||
+        textContains("我的金币").findOne(5000) ||
+        textContains("日常任务").findOne(5000)
+      ) {
+        Utils.log("确认已进入赚钱页面");
+        success = true;
+      }
+
+      if (success) {
+        return true;
+      }
+      Utils.log("点击'去赚钱'后未检测到赚钱页面特征");
+    }
+
+    Utils.log("无法进入赚钱页面，所有方法都失败");
+    return false;
+  },
+};
+
+module.exports = App;
