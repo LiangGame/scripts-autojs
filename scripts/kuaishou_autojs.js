@@ -28,7 +28,7 @@ const config = {
         },
         // 任务2: 刷广告视频赚金币
         task2: {
-            enabled: false,
+            enabled: true,
             maxRuns: 50,
             interval: 3000
         },
@@ -71,10 +71,15 @@ function randomClick(x, y, range) {
         range = 5;
     }
     
-    // 在指定坐标周围随机选择一个点
-    let randomX = x + Math.floor(Math.random() * range * 2) - range;
-    let randomY = y + Math.floor(Math.random() * range * 2) - range;
+    // 获取屏幕尺寸
+    var screenWidth = device.width;
+    var screenHeight = device.height;
     
+    // 在指定坐标周围随机选择一个点，并确保在屏幕范围内
+    var randomX = x + Math.floor(Math.random() * range);
+    var randomY = y + Math.floor(Math.random() * range);
+    
+    log("实际点击坐标: (" + x + ", " + y + ")");
     log("随机点击坐标: (" + randomX + ", " + randomY + ")");
     click(randomX, randomY);
     randomSleep(500, 1500);
@@ -88,13 +93,13 @@ function randomSwipe(startX, startY, endX, endY, duration, range) {
     }
     
     // 在起点和终点周围随机选择一个点
-    let randomStartX = startX + Math.floor(Math.random() * range * 2) - range;
-    let randomStartY = startY + Math.floor(Math.random() * range * 2) - range;
-    let randomEndX = endX + Math.floor(Math.random() * range * 2) - range;
-    let randomEndY = endY + Math.floor(Math.random() * range * 2) - range;
+    var randomStartX = startX + Math.floor(Math.random() * range * 2) - range;
+    var randomStartY = startY + Math.floor(Math.random() * range * 2) - range;
+    var randomEndX = endX + Math.floor(Math.random() * range * 2) - range;
+    var randomEndY = endY + Math.floor(Math.random() * range * 2) - range;
     
     // 随机调整滑动时间
-    let randomDuration = duration + Math.floor(Math.random() * 200) - 100;
+    var randomDuration = duration + Math.floor(Math.random() * 200) - 100;
     
     log("随机滑动: 从(" + randomStartX + ", " + randomStartY + ")到(" + randomEndX + ", " + randomEndY + "), 持续时间: " + randomDuration + "ms");
     swipe(randomStartX, randomStartY, randomEndX, randomEndY, randomDuration);
@@ -106,35 +111,177 @@ function clickText(textStr) {
     log("尝试查找并点击文本: " + textStr);
 
     // 方法1: 使用findOne
-    let target = text(textStr).findOne(3000);
+    var target = text(textStr).findOne(3000);
     if (target) {
         log("找到文本: " + textStr + ", 尝试点击");
-        let bounds = target.bounds();
-        randomClick(bounds.centerX(), bounds.centerY());
-        log("点击完成: " + textStr);
-        randomSleep(800, 1500);
-        return true;
+        var bounds = target.bounds();
+        if (bounds) {
+            // 检查坐标是否有效
+            if (bounds.centerX() < 0 || bounds.centerY() < 0) {
+                log("文本坐标无效，尝试滑动屏幕使元素可见");
+                // 尝试滑动屏幕使元素可见
+                var screenHeight = device.height;
+                var screenWidth = device.width;
+                
+                // 如果元素在屏幕上方不可见，向下滑动
+                if (bounds.centerY() < 0) {
+                    log("元素在屏幕上方不可见，向下滑动");
+                    randomSwipe(screenWidth / 2, screenHeight * 0.3, screenWidth / 2, screenHeight * 0.7, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    target = text(textStr).findOne(3000);
+                    if (target) {
+                        bounds = target.bounds();
+                        if (bounds && bounds.centerY() >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + textStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                // 如果元素在屏幕左侧不可见，向右滑动
+                if (bounds.centerX() < 0) {
+                    log("元素在屏幕左侧不可见，向右滑动");
+                    randomSwipe(screenWidth * 0.3, screenHeight / 2, screenWidth * 0.7, screenHeight / 2, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    target = text(textStr).findOne(3000);
+                    if (target) {
+                        bounds = target.bounds();
+                        if (bounds && bounds.centerX() >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + textStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                log("滑动后元素仍不可见，尝试其他方法");
+            } else {
+                randomClick(bounds.centerX(), bounds.centerY());
+                log("点击完成: " + textStr);
+                randomSleep(800, 1500);
+                return true;
+            }
+        }
     }
 
     // 方法2: 使用find
-    let targets = text(textStr).find();
+    var targets = text(textStr).find();
     if (targets.length > 0) {
         log("找到多个文本: " + textStr + ", 尝试点击第一个");
-        let bounds = targets[0].bounds();
-        randomClick(bounds.centerX(), bounds.centerY());
-        log("点击完成: " + textStr);
-        randomSleep(800, 1500);
-        return true;
+        var bounds = targets[0].bounds();
+        if (bounds) {
+            // 检查坐标是否有效
+            if (bounds.centerX() < 0 || bounds.centerY() < 0) {
+                log("文本坐标无效，尝试滑动屏幕使元素可见");
+                // 尝试滑动屏幕使元素可见
+                var screenHeight = device.height;
+                var screenWidth = device.width;
+                
+                // 如果元素在屏幕上方不可见，向下滑动
+                if (bounds.centerY() < 0) {
+                    log("元素在屏幕上方不可见，向下滑动");
+                    randomSwipe(screenWidth / 2, screenHeight * 0.3, screenWidth / 2, screenHeight * 0.7, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    targets = text(textStr).find();
+                    if (targets.length > 0) {
+                        bounds = targets[0].bounds();
+                        if (bounds && bounds.centerY() >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + textStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                // 如果元素在屏幕左侧不可见，向右滑动
+                if (bounds.centerX() < 0) {
+                    log("元素在屏幕左侧不可见，向右滑动");
+                    randomSwipe(screenWidth * 0.3, screenHeight / 2, screenWidth * 0.7, screenHeight / 2, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    targets = text(textStr).find();
+                    if (targets.length > 0) {
+                        bounds = targets[0].bounds();
+                        if (bounds && bounds.centerX() >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + textStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                log("滑动后元素仍不可见，尝试其他方法");
+            } else {
+                randomClick(bounds.centerX(), bounds.centerY());
+                log("点击完成: " + textStr);
+                randomSleep(800, 1500);
+                return true;
+            }
+        }
     }
 
     // 方法3: 使用bounds点击
-    let bounds = text(textStr).bounds();
+    var bounds = text(textStr).bounds();
     if (bounds) {
-        log("找到文本边界: " + textStr + ", 尝试点击中心位置");
-        randomClick(bounds.centerX(), bounds.centerY());
-        log("点击完成: " + textStr);
-        randomSleep(800, 1500);
-        return true;
+        // 检查坐标是否有效
+        if (bounds.centerX() < 0 || bounds.centerY() < 0) {
+            log("文本坐标无效，尝试滑动屏幕使元素可见");
+            // 尝试滑动屏幕使元素可见
+            var screenHeight = device.height;
+            var screenWidth = device.width;
+            
+            // 如果元素在屏幕上方不可见，向下滑动
+            if (bounds.centerY() < 0) {
+                log("元素在屏幕上方不可见，向下滑动");
+                randomSwipe(screenWidth / 2, screenHeight * 0.3, screenWidth / 2, screenHeight * 0.7, 500);
+                sleep(1000);
+                // 重新查找元素
+                bounds = text(textStr).bounds();
+                if (bounds && bounds.centerY() >= 0) {
+                    log("滑动后元素可见，尝试点击");
+                    randomClick(bounds.centerX(), bounds.centerY());
+                    log("点击完成: " + textStr);
+                    randomSleep(800, 1500);
+                    return true;
+                }
+            }
+            
+            // 如果元素在屏幕左侧不可见，向右滑动
+            if (bounds.centerX() < 0) {
+                log("元素在屏幕左侧不可见，向右滑动");
+                randomSwipe(screenWidth * 0.3, screenHeight / 2, screenWidth * 0.7, screenHeight / 2, 500);
+                sleep(1000);
+                // 重新查找元素
+                bounds = text(textStr).bounds();
+                if (bounds && bounds.centerX() >= 0) {
+                    log("滑动后元素可见，尝试点击");
+                    randomClick(bounds.centerX(), bounds.centerY());
+                    log("点击完成: " + textStr);
+                    randomSleep(800, 1500);
+                    return true;
+                }
+            }
+            
+            log("滑动后元素仍不可见，尝试其他方法");
+        } else {
+            log("找到文本边界: " + textStr + ", 尝试点击中心位置");
+            randomClick(bounds.centerX(), bounds.centerY());
+            log("点击完成: " + textStr);
+            randomSleep(800, 1500);
+            return true;
+        }
     }
 
     log("未找到文本: " + textStr);
@@ -146,35 +293,177 @@ function clickDesc(descStr) {
     log("尝试查找并点击描述: " + descStr);
 
     // 方法1: 使用findOne
-    let target = desc(descStr).findOne(3000);
+    var target = desc(descStr).findOne(3000);
     if (target) {
         log("找到描述: " + descStr + ", 尝试点击");
-        let bounds = target.bounds();
-        randomClick(bounds.centerX(), bounds.centerY());
-        log("点击完成: " + descStr);
-        randomSleep(800, 1500);
-        return true;
+        var bounds = target.bounds();
+        if (bounds) {
+            // 检查坐标是否有效
+            if (bounds.centerX() < 0 || bounds.centerY() < 0) {
+                log("描述坐标无效，尝试滑动屏幕使元素可见");
+                // 尝试滑动屏幕使元素可见
+                var screenHeight = device.height;
+                var screenWidth = device.width;
+                
+                // 如果元素在屏幕上方不可见，向下滑动
+                if (bounds.centerY() < 0) {
+                    log("元素在屏幕上方不可见，向下滑动");
+                    randomSwipe(screenWidth / 2, screenHeight * 0.3, screenWidth / 2, screenHeight * 0.7, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    target = desc(descStr).findOne(3000);
+                    if (target) {
+                        bounds = target.bounds();
+                        if (bounds && bounds.centerY() >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + descStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                // 如果元素在屏幕左侧不可见，向右滑动
+                if (bounds.centerX() < 0) {
+                    log("元素在屏幕左侧不可见，向右滑动");
+                    randomSwipe(screenWidth * 0.3, screenHeight / 2, screenWidth * 0.7, screenHeight / 2, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    target = desc(descStr).findOne(3000);
+                    if (target) {
+                        bounds = target.bounds();
+                        if (bounds && bounds.centerX() >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + descStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                log("滑动后元素仍不可见，尝试其他方法");
+            } else {
+                randomClick(bounds.centerX(), bounds.centerY());
+                log("点击完成: " + descStr);
+                randomSleep(800, 1500);
+                return true;
+            }
+        }
     }
 
     // 方法2: 使用find
-    let targets = desc(descStr).find();
+    var targets = desc(descStr).find();
     if (targets.length > 0) {
         log("找到多个描述: " + descStr + ", 尝试点击第一个");
-        let bounds = targets[0].bounds();
-        randomClick(bounds.centerX(), bounds.centerY());
-        log("点击完成: " + descStr);
-        randomSleep(800, 1500);
-        return true;
+        var bounds = targets[0].bounds();
+        if (bounds) {
+            // 检查坐标是否有效
+            if (bounds.centerX() < 0 || bounds.centerY() < 0) {
+                log("描述坐标无效，尝试滑动屏幕使元素可见");
+                // 尝试滑动屏幕使元素可见
+                var screenHeight = device.height;
+                var screenWidth = device.width;
+                
+                // 如果元素在屏幕上方不可见，向下滑动
+                if (bounds.centerY() < 0) {
+                    log("元素在屏幕上方不可见，向下滑动");
+                    randomSwipe(screenWidth / 2, screenHeight * 0.3, screenWidth / 2, screenHeight * 0.7, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    targets = desc(descStr).find();
+                    if (targets.length > 0) {
+                        bounds = targets[0].bounds();
+                        if (bounds && bounds.centerY() >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + descStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                // 如果元素在屏幕左侧不可见，向右滑动
+                if (bounds.left < 0) {
+                    log("元素在屏幕左侧不可见，向右滑动");
+                    randomSwipe(screenWidth * 0.3, screenHeight / 2, screenWidth * 0.7, screenHeight / 2, 500);
+                    sleep(1000);
+                    // 重新查找元素
+                    targets = desc(descStr).find();
+                    if (targets.length > 0) {
+                        bounds = targets[0].bounds();
+                        if (bounds && bounds.left >= 0) {
+                            log("滑动后元素可见，尝试点击");
+                            randomClick(bounds.centerX(), bounds.centerY());
+                            log("点击完成: " + descStr);
+                            randomSleep(800, 1500);
+                            return true;
+                        }
+                    }
+                }
+                
+                log("滑动后元素仍不可见，尝试其他方法");
+            } else {
+                randomClick(bounds.centerX(), bounds.centerY());
+                log("点击完成: " + descStr);
+                randomSleep(800, 1500);
+                return true;
+            }
+        }
     }
 
     // 方法3: 使用bounds点击
-    let bounds = desc(descStr).bounds();
+    var bounds = desc(descStr).bounds();
     if (bounds) {
-        log("找到描述边界: " + descStr + ", 尝试点击中心位置");
-        randomClick(bounds.centerX(), bounds.centerY());
-        log("点击完成: " + descStr);
-        randomSleep(800, 1500);
-        return true;
+        // 检查坐标是否有效
+        if (bounds.left < 0 || bounds.top < 0) {
+            log("描述坐标无效，尝试滑动屏幕使元素可见");
+            // 尝试滑动屏幕使元素可见
+            var screenHeight = device.height;
+            var screenWidth = device.width;
+            
+            // 如果元素在屏幕上方不可见，向下滑动
+            if (bounds.top < 0) {
+                log("元素在屏幕上方不可见，向下滑动");
+                randomSwipe(screenWidth / 2, screenHeight * 0.3, screenWidth / 2, screenHeight * 0.7, 500);
+                sleep(1000);
+                // 重新查找元素
+                bounds = desc(descStr).bounds();
+                if (bounds && bounds.top >= 0) {
+                    log("滑动后元素可见，尝试点击");
+                    randomClick(bounds.centerX(), bounds.centerY());
+                    log("点击完成: " + descStr);
+                    randomSleep(800, 1500);
+                    return true;
+                }
+            }
+            
+            // 如果元素在屏幕左侧不可见，向右滑动
+            if (bounds.left < 0) {
+                log("元素在屏幕左侧不可见，向右滑动");
+                randomSwipe(screenWidth * 0.3, screenHeight / 2, screenWidth * 0.7, screenHeight / 2, 500);
+                sleep(1000);
+                // 重新查找元素
+                bounds = desc(descStr).bounds();
+                if (bounds && bounds.left >= 0) {
+                    log("滑动后元素可见，尝试点击");
+                    randomClick(bounds.centerX(), bounds.centerY());
+                    log("点击完成: " + descStr);
+                    randomSleep(800, 1500);
+                    return true;
+                }
+            }
+            
+            log("滑动后元素仍不可见，尝试其他方法");
+        } else {
+            log("找到描述边界: " + descStr + ", 尝试点击中心位置");
+            randomClick(bounds.centerX(), bounds.centerY());
+            log("点击完成: " + descStr);
+            randomSleep(800, 1500);
+            return true;
+        }
     }
 
     log("未找到描述: " + descStr);
@@ -210,22 +499,78 @@ function findInParents(element, selector, maxDepth) {
     }
 
     log("开始查找父元素中的目标，最大深度: " + maxDepth);
-    let current = element;
-    let depth = 0;
+    var current = element;
+    var depth = 0;
 
     while (current && depth < maxDepth) {
         log("当前深度: " + depth);
-        let parent = current.parent();
+        var parent = current.parent();
         if (!parent) {
             log("没有更多父元素");
             break;
         }
 
         log("查找父元素中的目标");
-        let result = parent.find(selector);
+        var result = parent.find(selector);
         if (result.length > 0) {
             log("在第 " + depth + " 层父元素中找到目标，数量: " + result.length);
-            return result;
+            
+            // 检查结果中是否有负坐标的元素
+            var validResults = [];
+            for (var i = 0; i < result.length; i++) {
+                var item = result[i];
+                var bounds = item.bounds();
+                if (bounds) {
+                    // 检查坐标是否有效
+                    if (bounds.centerX() < 0 || bounds.centerY() < 0) {
+                        log("元素坐标无效，尝试滑动屏幕使元素可见");
+                        // 尝试滑动屏幕使元素可见
+                        var screenHeight = device.height;
+                        var screenWidth = device.width;
+                        
+                        // 如果元素在屏幕上方不可见，向下滑动
+                        if (bounds.centerY() < 0) {
+                            log("元素在屏幕上方不可见，向下滑动");
+                            randomSwipe(screenWidth / 2, screenHeight * 0.3, screenWidth / 2, screenHeight * 0.7, 500);
+                            sleep(1000);
+                            // 重新查找元素
+                            var newResult = parent.find(selector);
+                            if (newResult.length > 0) {
+                                var newBounds = newResult[0].bounds();
+                                if (newBounds && newBounds.centerY() >= 0) {
+                                    log("滑动后元素可见，添加到有效结果");
+                                    validResults.push(newResult[0]);
+                                }
+                            }
+                        }
+                        
+                        // 如果元素在屏幕左侧不可见，向右滑动
+                        if (bounds.centerX() < 0) {
+                            log("元素在屏幕左侧不可见，向右滑动");
+                            randomSwipe(screenWidth * 0.3, screenHeight / 2, screenWidth * 0.7, screenHeight / 2, 500);
+                            sleep(1000);
+                            // 重新查找元素
+                            var newResult = parent.find(selector);
+                            if (newResult.length > 0) {
+                                var newBounds = newResult[0].bounds();
+                                if (newBounds && newBounds.centerX() >= 0) {
+                                    log("滑动后元素可见，添加到有效结果");
+                                    validResults.push(newResult[0]);
+                                }
+                            }
+                        }
+                    } else {
+                        // 坐标有效，直接添加到结果
+                        validResults.push(item);
+                    }
+                }
+            }
+            
+            // 如果有有效结果，返回
+            if (validResults.length > 0) {
+                log("找到 " + validResults.length + " 个有效结果");
+                return validResults;
+            }
         }
 
         current = parent;
@@ -480,384 +825,403 @@ function handleRewardPopup() {
     return detectAndHandlePopups();
 }
 
-// ===================== 任务模块 =====================
+// ===================== 基础任务类 =====================
 
-// 任务1: 看广告得金币
-const TaskWatchAds = {
-    name: "看广告得金币",
-    description: "自动观看广告获取金币",
-    isInMoneyPage: false,
-    isInCooldown: false,
+// 基础任务类
+function BaseTask(name, description) {
+    this.name = name;
+    this.description = description;
+    this.isInMoneyPage = false;
+    this.isInCooldown = false;
+    this.cooldownStartTime = 0;
+    this.lastExecuteTime = 0;
+    this.successRate = 0;
+    this.reward = 0;
     
     // 点击领福利按钮, maxDepth为最大遍历深度
-    clickRewardButton: function(btnText, maxDepth) {
+    this.clickRewardButton = function(btnText, maxDepth) {
         log("查找领福利按钮");
-
-        // 查找"看广告得金币"右侧的"领福利"文本
-        log("尝试查找'看广告得金币'右侧的'" + btnText + "'文本");
-        let videoText = text("看广告得金币").findOne(3000);
-        if (videoText) {
-            log("找到'看广告得金币'文本");
-
-            // 尝试在不同层级的父元素中查找"领福利"文本
-            let rewardTexts = findInParents(videoText, text(btnText), maxDepth);
-
+        
+        // 查找任务名称右侧的按钮文本
+        log("尝试查找'" + this.name + "'右侧的'" + btnText + "'文本");
+        let taskText = text(this.name).findOne(3000);
+        if (taskText) {
+            log("找到'" + this.name + "'文本");
+            
+            // 尝试在不同层级的父元素中查找按钮文本
+            let rewardTexts = findInParents(taskText, text(btnText), maxDepth);
+            
             if (rewardTexts && rewardTexts.length > 0) {
                 log("找到'" + btnText + "'文本，尝试点击");
                 let bounds = rewardTexts[0].bounds();
+                log("点击坐标: (" + bounds.centerX() + ", " + bounds.centerY() + ")");
                 randomClick(bounds.centerX(), bounds.centerY());
                 log("点击'" + btnText + "'文本完成");
                 randomSleep(800, 1500);
                 return true;
             }
         }
-
-        log("未找到领福利按钮");
+        
+        log("未找到'" + btnText + "'按钮");
         return false;
-    },
+    };
     
-    // 等待广告播放完成
-    waitForAdComplete: function() {
-        log("等待广告播放完成");
-        let startTime = new Date().getTime();
-        randomSleep(2000, 4000);
-        while (new Date().getTime() - startTime < config.adTimeout) {
-            // 首先检查是否是直播间
-            let liveContainer = id("com.kuaishou.nebula.live_audience_plugin:id/live_player_float_element_container").findOne(5000);
-            if (liveContainer) {
-                log("检测到直播间任务，等待60秒后完成");
-                // 等待60秒
-                randomSleep(60000, 70000);
-                log("直播间任务完成");
-                return true;
-            } else {
-                // 检查是否有"xx秒后可领取xxx金币"的文本
-                let waitingText = textMatches(/.*s后可领取.*金币.*/).findOne(3000);
-                if (waitingText) {
-                    log("广告正在播放中...");
-                    // 检测并处理弹窗
-                    detectAndHandlePopups();
-                    randomSleep(800, 1500);
-                    continue;
-                }
-
-                // 检查是否有"已成功领取xxx金币"的文本
-                let successText = textMatches(/已成功领取.*金币.*/).findOne(3000);
-                if (successText) {
-                    log("广告播放完成");
+    // 检查是否在赚钱页面
+    this.checkInMoneyPage = function() {
+        if (textContains("看广告得金币").findOne(1000) || 
+            textContains("我的金币").findOne(1000) || 
+            textContains("日常任务").findOne(1000) ||
+            textContains("我的现金").findOne(1000)) {
+            log("当前在赚钱页面");
+            return true;
+        }
+        return false;
+    };
+    
+    // 检查是否在冷却中
+    this.checkCooldown = function() {
+        log("检查任务是否在冷却中");
+        // 增加重试机制
+        for (var i = 0; i < 3; i++) {
+            // 查找任务名称右侧的"冷却中"文本
+            log("尝试查找'" + this.name + "'右侧的'冷却中'文本");
+            var taskText = text(this.name).findOne(3000);
+            if (taskText) {
+                log("找到'" + this.name + "'文本");
+                
+                // 尝试在不同层级的父元素中查找"冷却中"文本
+                var cooldownTexts = findInParents(taskText, text("冷却中"), 3);
+                
+                if (cooldownTexts && cooldownTexts.length > 0) {
+                    log("找到'冷却中'文本，任务在冷却中");
+                    this.isInCooldown = true;
+                    this.cooldownStartTime = new Date().getTime(); // 记录开始冷却的时间
                     return true;
                 }
             }
-
-            // 检测并处理其他弹窗
-            detectAndHandlePopups();
-
-            randomSleep(800, 1500);
+            sleep(1000); // 等待1秒后重试
         }
-
-        log("广告等待超时");
+        log("未找到'冷却中'文本，任务不在冷却中");
+        this.isInCooldown = false;
         return false;
-    },
+    };
     
-    // 关闭广告
-    closeAd: function() {
-        log("尝试关闭广告");
-
-        // 查找"已成功领取xxx金币"右侧的"X"按钮
-        let closeButton = desc("关闭").findOne(3000);
-        if (closeButton) {
-            let bounds = closeButton.bounds();
-            randomClick(bounds.centerX(), bounds.centerY());
-            log("关闭广告");
-            randomSleep(800, 1500);
-
-            // 检测并处理弹窗
-            detectAndHandlePopups();
-            return true;
-        }
-
-        // 尝试查找其他可能的关闭按钮
-        let closeButtons = descMatches(/关闭|关闭广告|跳过|跳过广告/).find();
-        for (let i = 0; i < closeButtons.length; i++) {
-            let bounds = closeButtons[i].bounds();
-            randomClick(bounds.centerX(), bounds.centerY());
-            log("点击其他关闭按钮");
-            randomSleep(800, 1500);
-
-            // 检测并处理弹窗
-            detectAndHandlePopups();
-            return true;
-        }
-
-        // 尝试点击返回键
-        back();
-        log("点击返回键");
-        randomSleep(800, 1500);
-
-        // 检测并处理弹窗
-        detectAndHandlePopups();
-        return true;
-    },
-    checkInMoneyPage: function() {
-        if (textContains("看广告得金币").findOne(1000) || textContains("我的金币").findOne(1000) || textContains("日常任务").findOne(1000)) {
-            log("当前在赚钱页面");
+    // 检查冷却是否应该结束
+    this.shouldEndCooldown = function() {
+        if (!this.isInCooldown) return false;
+        
+        // 如果冷却时间超过30分钟，自动结束冷却
+        var now = new Date().getTime();
+        var cooldownDuration = 30 * 60 * 1000; // 30分钟
+        if (now - this.cooldownStartTime > cooldownDuration) {
+            log("冷却时间已超过30分钟，自动结束冷却");
+            this.isInCooldown = false;
             return true;
         }
         return false;
-    },
+    };
     
-    // 检查是否在冷却中
-    checkCooldown: function() {
-        log("检查任务是否在冷却中");
-        if (this.clickRewardButton("冷却中", 3)) {
-            log("任务在冷却中");
-            this.isInCooldown = true;
+    // 等待广告播放完成 - 由子类实现
+    this.waitForAdComplete = function() {
+        log("等待广告播放完成 - 基类方法，应由子类重写");
+        return false;
+    };
+    
+    // 执行任务 - 由子类实现
+    this.execute = function() {
+        log("执行任务 - 基类方法，应由子类重写");
+        return false;
+    };
+}
+
+// ===================== 任务模块 =====================
+
+// 任务1: 看广告得金币
+var TaskWatchAds = new BaseTask("看广告得金币", "自动观看广告获取金币");
+
+// 重写等待广告播放完成方法
+TaskWatchAds.waitForAdComplete = function() {
+    log("等待广告播放完成");
+    var startTime = new Date().getTime();
+    randomSleep(2000, 4000);
+    while (new Date().getTime() - startTime < config.adTimeout) {
+        // 首先检查是否是直播间
+        var liveContainer = id("com.kuaishou.nebula.live_audience_plugin:id/live_player_float_element_container").findOne(5000);
+        if (liveContainer) {
+            log("检测到直播间任务，等待60秒后完成");
+            // 等待60秒
+            randomSleep(60000, 70000);
+            log("直播间任务完成");
             return true;
         } else {
-            log("任务不在冷却中");
-            this.isInCooldown = false;
-            return false;
-        }
-    },
-    
-    // 执行任务
-    execute: function() {
-        log("开始执行任务: " + this.name);
-        
-        // 检查是否在赚钱页面，如果不在则重新进入
-        if (!this.isInMoneyPage) {
-            log("当前不在赚钱页面，重新进入");
-            // 确保在赚钱页面
-            if (!enterMoneyPage()) {
-                log("无法进入赚钱页面，任务终止");
-                return false;
-            } else {
-                this.isInMoneyPage = true;
-            }    
-        }
-
-        if (this.checkInMoneyPage()) {
-            // 点击领福利按钮
-            if (!this.clickRewardButton("领福利", 3)) {
-                log("未找到领福利按钮，判断是否在冷却中");
-                if (this.checkCooldown()) {
-                    log("检测到当前在冷却中，切换到任务2");
-                    // 暂时禁用当前任务并启用任务2
-                    config.tasks.watchAds.enabled = false;
-                    config.tasks.task2.enabled = true;
-                    return false; // 直接返回，让任务管理器切换到其他任务
-                }
-            }
-        }
-        
-        // 等待广告播放完成
-        if (!this.waitForAdComplete()) {
-            log("广告未播放完成，任务终止");
-            back();
-            sleep(1000);
-            return false;
-        }
-        
-        // 关闭广告
-        this.closeAd();
-        
-        log("任务完成: " + this.name);
-
-        return true;
-    }
-};
-
-// 任务2: 刷广告视频赚金币
-const Task2 = {
-    name: "刷广告视频赚金币",
-    description: "自动浏览广告视频获取金币",
-    isInMoneyPage: false,
-    isInCooldown: false,
-    
-    // 点击领福利按钮, maxDepth为最大遍历深度
-    clickRewardButton: function(btnText, maxDepth) {
-        log("查找领福利按钮");
-
-        // 查找"刷广告视频赚金币"右侧的"领福利"文本
-        log("尝试查找'刷广告视频赚金币'右侧的'" + btnText + "'文本");
-        let videoText = text("刷广告视频赚金币").findOne(3000);
-        if (videoText) {
-            log("找到'刷广告视频赚金币'文本");
-
-            // 尝试在不同层级的父元素中查找"领福利"文本
-            let rewardTexts = findInParents(videoText, text(btnText), maxDepth);
-
-            if (rewardTexts && rewardTexts.length > 0) {
-                log("找到'" + btnText + "'文本，尝试点击");
-                let bounds = rewardTexts[0].bounds();
-                randomClick(bounds.centerX(), bounds.centerY());
-                log("点击'" + btnText + "'文本完成");
+            // 检查是否有"xx秒后可领取xxx金币"的文本
+            var waitingText = textMatches(/.*s后可领取.*金币.*/).findOne(3000);
+            if (waitingText) {
+                log("广告正在播放中...");
+                // 检测并处理弹窗
+                detectAndHandlePopups();
                 randomSleep(800, 1500);
+                continue;
+            }
+            
+            // 检查是否有"已成功领取xxx金币"的文本
+            var successText = textMatches(/已成功领取.*金币.*/).findOne(3000);
+            if (successText) {
+                log("广告播放完成");
                 return true;
             }
         }
+        
+        // 检测并处理其他弹窗
+        detectAndHandlePopups();
+        
+        randomSleep(800, 1500);
+    }
+    
+    log("广告等待超时");
+    return false;
+};
 
-        log("未找到领福利按钮");
-        return false;
-    },
+// 重写执行任务方法
+TaskWatchAds.execute = function() {
+    log("开始执行任务: " + this.name + " isInMoneyPage: " + this.isInMoneyPage);
     
-    // 等待广告播放完成
-    waitForAdComplete: function() {
-        log("等待广告播放完成");
-        let startTime = new Date().getTime();
-        randomSleep(2000, 4000);
-        
-        // 随机等待10-30秒
-        let waitTime = Math.floor(Math.random() * 21) + 10; // 10-30秒
-        log("将等待 " + waitTime + " 秒");
-        
-        for (let i = waitTime; i > 0; i--) {
-            if (i % 5 === 0) {
-                log("视频播放中，还剩 " + i + " 秒");
-            }
-            sleep(1000);
-        }
-        
-        log("广告播放完成");
-        return true;
-    },
-    
-    // 上滑到下一个视频
-    swipeToNextVideo: function() {
-        log("执行上滑操作切换到下一个视频");
-        
-        // 获取屏幕尺寸
-        let screenWidth = device.width;
-        let screenHeight = device.height;
-        
-        // 计算滑动起点和终点
-        let startX = screenWidth * 0.5;
-        let startY = screenHeight * 0.8;
-        let endX = screenWidth * 0.5;
-        let endY = screenHeight * 0.2;
-        
-        // 执行随机滑动操作
-        randomSwipe(startX, startY, endX, endY, 500);
-        log("上滑操作完成");
-        randomSleep(1500, 2500);
-        
-        return true;
-    },
-    
-    checkInMoneyPage: function() {
-        if (textContains("我的现金").findOne(1000) || textContains("我的金币").findOne(1000) || textContains("日常任务").findOne(1000)) {
-            log("当前在赚钱页面");
-            return true;
-        }
-        return false;
-    },
-    
-    // 检查是否在冷却中
-    checkCooldown: function() {
-        log("检查任务是否在冷却中");
-        if (this.clickRewardButton("冷却中", 3)) {
-            log("任务在冷却中");
-            this.isInCooldown = true;
-            return true;
-        } else {
-            log("任务不在冷却中");
-            this.isInCooldown = false;
+    // 检查是否在赚钱页面，如果不在则重新进入
+    if (!this.isInMoneyPage) {
+        log("当前不在赚钱页面，重新进入");
+        // 确保在赚钱页面
+        if (!enterMoneyPage()) {
+            log("无法进入赚钱页面，任务终止");
             return false;
-        }
-    },
-    
-    // 执行任务
-    execute: function() {
-        log("开始执行任务: " + this.name);
-        
-        // 检查是否在赚钱页面，如果不在则重新进入
-        if (!this.isInMoneyPage) {
-            log("当前不在赚钱页面，重新进入");
-            // 确保在赚钱页面
-            if (!enterMoneyPage()) {
-                log("无法进入赚钱页面，任务终止");
-                return false;
-            } else {
-                this.isInMoneyPage = true;
-            }
-            
-            // 先小幅上滑一下
-            log("执行小幅上滑操作");
-            // 获取屏幕尺寸
-            let screenWidth = device.width;
-            let screenHeight = device.height;
-            
-            // 计算小幅滑动的起点和终点（只滑动屏幕高度的20%）
-            let startX = screenWidth * 0.5;
-            let startY = screenHeight * 0.6; // 从屏幕60%处开始
-            let endX = screenWidth * 0.5;
-            let endY = screenHeight * 0.4; // 滑动到屏幕40%处
-            
-            // 执行随机滑动操作，时间较短（300-500ms）
-            randomSwipe(startX, startY, endX, endY, 200);
-            log("小幅上滑操作完成");
-            randomSleep(1000, 2000);
-            
-            // 点击领福利按钮
-            if (!this.clickRewardButton("领福利", 3)) {
-                log("未找到领福利按钮，判断是否在冷却中");
-                if (this.checkCooldown()) {
-                    log("检测到当前在冷却中，切换到任务1");
-                    // 暂时禁用当前任务并启用任务1
-                    config.tasks.task2.enabled = false;
-                    config.tasks.watchAds.enabled = true;
-                    return false; // 直接返回，让任务管理器切换到其他任务
+        } else {
+            this.isInMoneyPage = true;
+        }    
+    }
+
+    // 检查是否应该自动结束冷却
+    if (this.shouldEndCooldown()) {
+        log("冷却已自动结束，继续执行任务");
+    }
+
+    // 确保在赚钱页面后再检查冷却状态
+    if (this.checkInMoneyPage()) {
+        // 点击领福利按钮
+        if (!this.clickRewardButton("领福利", 3)) {
+            log("未找到领福利按钮，判断是否在冷却中");
+            if (this.checkCooldown()) {
+                log("检测到当前在冷却中");
+                // 尝试自动切换到其他任务
+                var newTaskName = TaskManager.switchToAnotherTask(this.name);
+                if (newTaskName) {
+                    log("已切换到任务: " + newTaskName);
+                    return false;
+                } else {
+                    // 如果没有其他可用任务，等待一段时间后重试
+                    log("没有其他可用任务，等待5分钟后重试");
+                    sleep(5 * 60 * 1000);
+                    return this.execute(); // 递归重试
                 }
             }
         }
-        
-        // 等待广告播放完成
-        if (!this.waitForAdComplete()) {
-            log("广告未播放完成，任务终止");
-            back();
-            sleep(1000);
-            return false;
-        }
-        
-        // 上滑到下一个视频
-        this.swipeToNextVideo();
-        
-        log("任务完成: " + this.name);
+    }
+    
+    // 等待广告播放完成
+    if (!this.waitForAdComplete()) {
+        log("广告未播放完成，任务终止");
+        back();
+        sleep(1000);
+        return false;
+    }
+    
+    // 关闭广告
+    this.closeAd();
+    
+    log("任务完成: " + this.name);
+    return true;
+};
 
+// 关闭广告
+TaskWatchAds.closeAd = function() {
+    log("尝试关闭广告");
+    
+    // 查找"已成功领取xxx金币"右侧的"X"按钮
+    var closeButton = desc("关闭").findOne(3000);
+    if (closeButton) {
+        var bounds = closeButton.bounds();
+        randomClick(bounds.centerX(), bounds.centerY());
+        log("关闭广告");
+        randomSleep(800, 1500);
+        
+        // 检测并处理弹窗
+        detectAndHandlePopups();
         return true;
     }
+    
+    // 尝试查找其他可能的关闭按钮
+    var closeButtons = descMatches(/关闭|关闭广告|跳过|跳过广告/).find();
+    for (var i = 0; i < closeButtons.length; i++) {
+        var bounds = closeButtons[i].bounds();
+        randomClick(bounds.centerX(), bounds.centerY());
+        log("点击其他关闭按钮");
+        randomSleep(800, 1500);
+        
+        // 检测并处理弹窗
+        detectAndHandlePopups();
+        return true;
+    }
+    
+    // 尝试点击返回键
+    back();
+    log("点击返回键");
+    randomSleep(800, 1500);
+    
+    // 检测并处理弹窗
+    detectAndHandlePopups();
+    return true;
+};
+
+// 任务2: 刷广告视频赚金币
+var Task2 = new BaseTask("刷广告视频赚金币", "自动浏览广告视频获取金币");
+
+// 重写等待广告播放完成方法
+Task2.waitForAdComplete = function() {
+    log("等待广告播放完成");
+    // 随机等待10-30秒
+    var waitTime = Math.floor(Math.random() * 21) + 10; // 10-30秒
+    log("将等待 " + waitTime + " 秒");
+    
+    for (var i = waitTime; i > 0; i--) {
+        if (i % 5 === 0) {
+            log("视频播放中，还剩 " + i + " 秒");
+        }
+        sleep(1000);
+    }
+    
+    log("广告播放完成");
+    return true;
+};
+
+// 上滑到下一个视频
+Task2.swipeToNextVideo = function() {
+    log("执行上滑操作切换到下一个视频");
+    
+    // 获取屏幕尺寸
+    var screenWidth = device.width;
+    var screenHeight = device.height;
+    
+    // 计算滑动起点和终点
+    var startX = screenWidth * 0.5;
+    var startY = screenHeight * 0.8;
+    var endX = screenWidth * 0.5;
+    var endY = screenHeight * 0.2;
+    
+    // 执行随机滑动操作
+    randomSwipe(startX, startY, endX, endY, 500);
+    log("上滑操作完成");
+    randomSleep(1500, 2500);
+    
+    return true;
+};
+
+// 重写执行任务方法
+Task2.execute = function() {
+    log("开始执行任务: " + this.name);
+    
+    // 检查是否在赚钱页面，如果不在则重新进入
+    if (!this.isInMoneyPage) {
+        log("当前不在赚钱页面，重新进入");
+        // 确保在赚钱页面
+        if (!enterMoneyPage()) {
+            log("无法进入赚钱页面，任务终止");
+            return false;
+        } else {
+            this.isInMoneyPage = true;
+        }
+    }
+    
+    // 确保在赚钱页面后再检查冷却状态
+    if (this.checkInMoneyPage()) {
+        // 先小幅上滑一下
+        log("执行小幅上滑操作");
+        // 获取屏幕尺寸
+        var screenWidth = device.width;
+        var screenHeight = device.height;
+        
+        // 计算小幅滑动的起点和终点（只滑动屏幕高度的20%）
+        var startX = screenWidth * 0.5;
+        var startY = screenHeight * 0.6; // 从屏幕60%处开始
+        var endX = screenWidth * 0.5;
+        var endY = screenHeight * 0.4; // 滑动到屏幕40%处
+        
+        // 执行随机滑动操作，时间较短（300-500ms）
+        randomSwipe(startX, startY, endX, endY, 200);
+        log("小幅上滑操作完成");
+        randomSleep(1000, 2000);
+        
+        // 检查是否应该自动结束冷却
+        if (this.shouldEndCooldown()) {
+            log("冷却已自动结束，继续执行任务");
+        }
+        
+        // 点击领福利按钮
+        if (!this.clickRewardButton("领福利", 3)) {
+            log("未找到领福利按钮，判断是否在冷却中");
+            if (this.checkCooldown()) {
+                log("检测到当前在冷却中");
+                // 尝试自动切换到其他任务
+                var newTaskName = TaskManager.switchToAnotherTask(this.name);
+                if (newTaskName) {
+                    log("已切换到任务: " + newTaskName);
+                    return false;
+                } else {
+                    // 如果没有其他可用任务，等待一段时间后重试
+                    log("没有其他可用任务，等待5分钟后重试");
+                    sleep(5 * 60 * 1000);
+                    return this.execute(); // 递归重试
+                }
+            }
+        }
+    }
+    
+    // 等待广告播放完成
+    if (!this.waitForAdComplete()) {
+        log("广告未播放完成，任务终止");
+        back();
+        sleep(1000);
+        return false;
+    }
+    
+    // 上滑到下一个视频
+    this.swipeToNextVideo();
+    
+    log("任务完成: " + this.name);
+    return true;
 };
 
 // 任务3: 待实现
-const Task3 = {
-    name: "任务3",
-    description: "待实现的任务3",
-    
-    // 执行任务
-    execute: function() {
-        log("开始执行任务: " + this.name);
-        log("任务3尚未实现");
-        return false;
-    }
+var Task3 = new BaseTask("任务3", "待实现的任务3");
+
+// 重写执行任务方法
+Task3.execute = function() {
+    log("开始执行任务: " + this.name);
+    log("任务3尚未实现");
+    return false;
 };
 
 // 任务4: 待实现
-const Task4 = {
-    name: "任务4",
-    description: "待实现的任务4",
-    
-    // 执行任务
-    execute: function() {
-        log("开始执行任务: " + this.name);
-        log("任务4尚未实现");
-        return false;
-    }
+var Task4 = new BaseTask("任务4", "待实现的任务4");
+
+// 重写执行任务方法
+Task4.execute = function() {
+    log("开始执行任务: " + this.name);
+    log("任务4尚未实现");
+    return false;
 };
 
 // ===================== 任务管理器 =====================
 
 // 任务管理器
-const TaskManager = {
+var TaskManager = {
     // 所有可用任务
     tasks: {
         watchAds: TaskWatchAds,
@@ -885,18 +1249,18 @@ const TaskManager = {
     // 停止指定任务的线程
     stopTaskThreads: function(taskName) {
         log("尝试停止任务 " + taskName + " 的线程");
-        let stoppedCount = 0;
+        var stoppedCount = 0;
         
         if (taskName === "all") {
             // 停止所有任务的线程
-            for (let task in this.runningThreads) {
+            for (var task in this.runningThreads) {
                 stoppedCount += this.stopTaskThreads(task);
             }
             return stoppedCount;
         }
         
         // 获取指定任务的线程
-        let thread = this.runningThreads[taskName];
+        var thread = this.runningThreads[taskName];
         if (!thread) {
             log("任务 " + taskName + " 没有运行中的线程");
             return 0;
@@ -923,7 +1287,7 @@ const TaskManager = {
     
     // 检查任务是否在冷却中
     isTaskInCooldown: function(taskName) {
-        const task = this.tasks[taskName];
+        var task = this.tasks[taskName];
         if (!task) {
             log("任务不存在: " + taskName);
             return false;
@@ -931,11 +1295,19 @@ const TaskManager = {
         
         // 确保在赚钱页面
         if (!task.isInMoneyPage) {
+            log("当前不在赚钱页面，先进入赚钱页面");
             if (!enterMoneyPage()) {
                 log("无法进入赚钱页面，无法检查冷却状态");
                 return false;
             } else {
                 task.isInMoneyPage = true;
+            }
+        } else if (!task.checkInMoneyPage()) {
+            // 即使isInMoneyPage为true，也再次检查是否真的在赚钱页面
+            log("isInMoneyPage标记为true但实际不在赚钱页面，重新进入");
+            if (!enterMoneyPage()) {
+                log("无法进入赚钱页面，无法检查冷却状态");
+                return false;
             }
         }
         
@@ -948,10 +1320,14 @@ const TaskManager = {
         log("尝试切换到另一个可用任务");
         
         // 获取所有启用的任务
-        let enabledTasks = [];
-        for (let taskName in config.tasks) {
+        var enabledTasks = [];
+        var taskPriorities = {};
+        
+        for (var taskName in config.tasks) {
             if (config.tasks[taskName].enabled && taskName !== currentTaskName) {
                 enabledTasks.push(taskName);
+                // 计算任务优先级
+                taskPriorities[taskName] = this.calculateTaskPriority(taskName);
             }
         }
         
@@ -960,12 +1336,44 @@ const TaskManager = {
             return false;
         }
         
-        // 随机选择一个任务
-        let randomIndex = Math.floor(Math.random() * enabledTasks.length);
-        let newTaskName = enabledTasks[randomIndex];
+        // 根据优先级排序任务
+        enabledTasks.sort(function(a, b) {
+            return taskPriorities[b] - taskPriorities[a];
+        });
         
-        log("切换到任务: " + newTaskName);
+        // 选择优先级最高的任务
+        var newTaskName = enabledTasks[0];
+        log("切换到优先级最高的任务: " + newTaskName);
         return newTaskName;
+    },
+    
+    // 计算任务优先级
+    calculateTaskPriority: function(taskName) {
+        var task = this.tasks[taskName];
+        var priority = 0;
+        
+        // 如果任务从未执行过，给予较高优先级
+        if (!task.lastExecuteTime) {
+            priority += 100;
+        } else {
+            // 根据上次执行时间计算优先级
+            var now = new Date().getTime();
+            var timeSinceLastExecute = now - task.lastExecuteTime;
+            // 时间间隔越长，优先级越高
+            priority += Math.min(timeSinceLastExecute / (60 * 60 * 1000), 24); // 最多24小时
+        }
+        
+        // 如果任务成功率较高，提高优先级
+        if (task.successRate > 0.8) {
+            priority += 20;
+        }
+        
+        // 如果任务收益较高，提高优先级
+        if (task.reward > 100) {
+            priority += 10;
+        }
+        
+        return priority;
     },
     
     // 等待冷却结束并检查
@@ -973,7 +1381,7 @@ const TaskManager = {
         log("等待任务 " + taskName + " 冷却结束，每 " + checkIntervalMinutes + " 分钟检查一次");
         
         // 等待指定时间
-        for (let i = checkIntervalMinutes; i > 0; i--) {
+        for (var i = checkIntervalMinutes; i > 0; i--) {
             log("还剩 " + i + " 分钟重新检查任务状态");
             sleep(60000); // 等待1分钟
         }
@@ -990,7 +1398,7 @@ const TaskManager = {
     
     // 执行指定任务
     executeTask: function(taskName, maxRuns) {
-        const task = this.tasks[taskName];
+        var task = this.tasks[taskName];
         if (!task) {
             log("任务不存在: " + taskName);
             return false;
@@ -999,8 +1407,10 @@ const TaskManager = {
         log("开始执行任务: " + task.name);
         log("任务描述: " + task.description);
         
-        let runCount = 0;
-        let successCount = 0;
+        var runCount = 0;
+        var successCount = 0;
+        var consecutiveFailures = 0;
+        var MAX_CONSECUTIVE_FAILURES = 3;
         
         while (runCount < maxRuns) {
             try {
@@ -1023,78 +1433,144 @@ const TaskManager = {
                     }
                 }
                 
-                // 检查任务是否在冷却中
-                if (task.checkCooldown()) {
-                    log("任务 " + taskName + " 在冷却中，切换到其他任务");
-                    
-                    // 切换到另一个任务
-                    let newTaskName = this.switchToAnotherTask(taskName);
-                    if (newTaskName) {
-                        log("切换到任务: " + newTaskName);
-                        const that = this;
-                        // 在新线程中执行新任务
-                        log("即将创建新线程");
-                        let newThread = threads.start(function() {
-                            log("新线程开始执行");
-                            try {
-                                that.executeTask(newTaskName, config.tasks[newTaskName].maxRuns);
-                            } catch (error) {
-                                log("切换任务执行出错: " + error);
-                            }
-                            log("新线程执行结束");
-                        });
-                        log("新线程创建完成");
-                        // 将新线程添加到管理列表，并关联任务名称
-                        this.addThread(newThread, newTaskName);
-                        log("新线程添加到管理列表");
-                        // 等待一段时间后重新检查当前任务
-                        randomSleep(5 * 60000, 10 * 60000); // 等待5-10分钟
-                        log("等待结束，重新检查当前任务");
-                        // 中断新线程
-                        this.stopTaskThreads(newTaskName);
-                        continue;
+                // 确保在赚钱页面后再检查冷却状态
+                if (!task.isInMoneyPage) {
+                    log("当前不在赚钱页面，先进入赚钱页面");
+                    if (!enterMoneyPage()) {
+                        log("无法进入赚钱页面，无法检查冷却状态");
+                        return false;
                     } else {
-                        log("没有其他可用任务，等待冷却结束");
-                        // 等待5分钟后重新检查
-                        for (let i = 5; i > 0; i--) {
-                            // 检查线程是否已被删除（表示被中断）
-                            if (!this.runningThreads[taskName]) {
-                                log("任务被中断，停止执行");
-                                return false;
-                            }
-                            log("等待冷却结束，还剩 " + i + " 分钟");
-                            sleep(60000);
-                        }
-                        // 重新检查冷却状态
-                        if (!task.checkCooldown()) {
-                            log("冷却已结束，继续执行任务 " + taskName);
-                            task.isInCooldown = false;
+                        task.isInMoneyPage = true;
+                    }
+                }
+                
+                // 检查任务是否在冷却中
+                if (task.checkInMoneyPage() && task.checkCooldown()) {
+                    log("任务 " + taskName + " 在冷却中");
+                    
+                    // 检查是否应该自动结束冷却
+                    if (task.shouldEndCooldown()) {
+                        log("冷却已自动结束，继续执行任务");
+                        task.isInCooldown = false;
+                    } else {
+                        // 切换到另一个任务
+                        var newTaskName = this.switchToAnotherTask(taskName);
+                        if (newTaskName) {
+                            log("切换到任务: " + newTaskName);
+                            
+                            // 先中断当前任务的线程
+                            log("中断当前任务 " + taskName + " 的线程");
+                            this.stopTaskThreads(taskName);
+                            
+                            // 创建新线程执行新任务
+                            var that = this;
+                            var newThread = threads.start(function() {
+                                log("新线程开始执行");
+                                try {
+                                    that.executeTask(newTaskName, config.tasks[newTaskName].maxRuns);
+                                } catch (error) {
+                                    log("切换任务执行出错: " + error);
+                                }
+                                log("新线程执行结束");
+                            });
+                            
+                            // 将新线程添加到管理列表
+                            this.addThread(newThread, newTaskName);
+                            log("新任务线程已创建并添加到管理列表");
+                            
+                            // 直接返回，不再继续执行当前任务
+                            return false;
                         } else {
-                            log("冷却仍未结束，继续等待");
+                            log("没有其他可用任务，等待冷却结束");
+                            // 等待5分钟后重新检查
+                            for (var i = 5; i > 0; i--) {
+                                if (!this.runningThreads[taskName]) {
+                                    log("任务被中断，停止执行");
+                                    return false;
+                                }
+                                log("等待冷却结束，还剩 " + i + " 分钟");
+                                sleep(60000);
+                            }
                             continue;
                         }
                     }
                 }
                 
                 // 执行任务
-                if (task.execute()) {
+                var success = task.execute();
+                if (success) {
                     successCount++;
+                    consecutiveFailures = 0;
+                    task.lastExecuteTime = new Date().getTime();
+                    task.successRate = successCount / (runCount + 1);
+                } else {
+                    consecutiveFailures++;
+                    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+                        log("连续失败次数过多，切换到其他任务");
+                        var newTaskName = this.switchToAnotherTask(taskName);
+                        if (newTaskName) {
+                            log("切换到任务: " + newTaskName);
+                            
+                            // 先中断当前任务的线程
+                            log("中断当前任务 " + taskName + " 的线程");
+                            this.stopTaskThreads(taskName);
+                            
+                            // 创建新线程执行新任务
+                            var that = this;
+                            var newThread = threads.start(function() {
+                                that.executeTask(newTaskName, config.tasks[newTaskName].maxRuns);
+                            });
+                            
+                            // 将新线程添加到管理列表
+                            this.addThread(newThread, newTaskName);
+                            log("新任务线程已创建并添加到管理列表");
+                            
+                            // 直接返回，不再继续执行当前任务
+                            return false;
+                        }
+                    }
                 }
                 
                 runCount++;
                 log("完成第 " + runCount + " 次执行，成功: " + successCount + " 次");
                 
                 // 随机等待间隔时间
-                let interval = config.tasks[taskName].interval;
-                let randomInterval = interval + Math.floor(Math.random() * 1000) - 500; // 在基准间隔上随机增减500毫秒
+                var interval = config.tasks[taskName].interval;
+                var randomInterval = interval + Math.floor(Math.random() * 1000) - 500;
                 log("随机等待 " + randomInterval + " 毫秒");
                 sleep(randomInterval);
                 
             } catch (error) {
                 log("执行任务时发生错误: " + error);
+                consecutiveFailures++;
                 // 出错时尝试返回
                 back();
                 randomSleep(800, 1500);
+                
+                if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+                    log("连续失败次数过多，切换到其他任务");
+                    var newTaskName = this.switchToAnotherTask(taskName);
+                    if (newTaskName) {
+                        log("切换到任务: " + newTaskName);
+                        
+                        // 先中断当前任务的线程
+                        log("中断当前任务 " + taskName + " 的线程");
+                        this.stopTaskThreads(taskName);
+                        
+                        // 创建新线程执行新任务
+                        var that = this;
+                        var newThread = threads.start(function() {
+                            that.executeTask(newTaskName, config.tasks[newTaskName].maxRuns);
+                        });
+                        
+                        // 将新线程添加到管理列表
+                        this.addThread(newThread, newTaskName);
+                        log("新任务线程已创建并添加到管理列表");
+                        
+                        // 直接返回，不再继续执行当前任务
+                        return false;
+                    }
+                }
             }
         }
         
@@ -1107,27 +1583,45 @@ const TaskManager = {
     executeAllEnabledTasks: function() {
         log("开始执行所有启用的任务");
 
-        // 保存TaskManager的引用
-        let taskManager = this;
+        // 获取所有启用的任务并按优先级排序
+        var enabledTasks = [];
+        var taskPriorities = {};
         
-        for (let taskName in config.tasks) {
+        for (var taskName in config.tasks) {
             if (config.tasks[taskName].enabled) {
-                log("创建任务线程: " + taskName);
-                // 为每个启用的任务创建一个新线程
-                let thread = threads.start(function() {
-                    try {
-                        // 使用保存的taskManager引用
-                        taskManager.executeTask(taskName, config.tasks[taskName].maxRuns);
-                    } catch (error) {
-                        log("任务线程执行出错: " + error);
-                    }
-                });
-                // 将线程添加到管理列表，并关联任务名称
-                this.addThread(thread, taskName);
+                enabledTasks.push(taskName);
+                taskPriorities[taskName] = this.calculateTaskPriority(taskName);
             }
         }
-
-        log("所有启用的任务执行完成");
+        
+        if (enabledTasks.length === 0) {
+            log("没有启用的任务");
+            return;
+        }
+        
+        // 根据优先级排序任务
+        enabledTasks.sort(function(a, b) {
+            return taskPriorities[b] - taskPriorities[a];
+        });
+        
+        // 只执行优先级最高的任务
+        var highestPriorityTask = enabledTasks[0];
+        log("执行优先级最高的任务: " + highestPriorityTask);
+        
+        // 创建新线程执行任务
+        var that = this;
+        var thread = threads.start(function() {
+            try {
+                that.executeTask(highestPriorityTask, config.tasks[highestPriorityTask].maxRuns);
+            } catch (error) {
+                log("任务线程执行出错: " + error);
+            }
+        });
+        
+        // 将线程添加到管理列表
+        this.addThread(thread, highestPriorityTask);
+        
+        log("任务开始执行");
     }
 };
 
@@ -1147,10 +1641,15 @@ function main() {
         exit();
     }
     
-    // 执行所有启用的任务
+    // 执行优先级最高的任务
     TaskManager.executeAllEnabledTasks();
     
-    toast("所有任务执行完成");
+    // 等待任务执行完成
+    while (Object.keys(TaskManager.runningThreads).length > 0) {
+        sleep(1000);
+    }
+    
+    toast("任务执行完成");
 }
 
 // 启动脚本
