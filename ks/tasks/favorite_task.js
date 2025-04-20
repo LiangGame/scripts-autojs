@@ -71,7 +71,8 @@ FavoriteTask.prototype.execute = function () {
     completedText.visibleToUser()
   ) {
     Utils.log("收藏任务已完成");
-    return false;
+    this.cleanup(); // 保存任务完成状态
+    return true; // 返回 true 表示任务成功完成
   }
 
   var goTaskBtn = Utils.findInParents(collectTaskText, text("去收藏"));

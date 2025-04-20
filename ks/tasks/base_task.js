@@ -28,9 +28,56 @@ function BaseTask(name, description) {
   this.middleRegion = null; // 添加 middleRegion 属性
   this.runCount = 0;
   this.maxRuns = 1;
+
+  // 任务完成状态存储
+  this.storagePath = "/sdcard/ks_task_status.json";
+  this.loadTaskStatus();
 }
 
 BaseTask.prototype = {
+  // 加载任务完成状态
+  loadTaskStatus: function() {
+    try {
+      if (files.exists(this.storagePath)) {
+        var content = files.read(this.storagePath);
+        var status = JSON.parse(content);
+        if (status[this.name]) {
+          this.lastCompletedDate = status[this.name].lastCompletedDate;
+        }
+      }
+    } catch (e) {
+      Utils.log("加载任务状态失败: " + e);
+    }
+  },
+
+  // 保存任务完成状态
+  saveTaskStatus: function() {
+    try {
+      var status = {};
+      if (files.exists(this.storagePath)) {
+        var content = files.read(this.storagePath);
+        status = JSON.parse(content);
+      }
+      
+      status[this.name] = {
+        lastCompletedDate: new Date().toLocaleDateString()
+      };
+      
+      files.write(this.storagePath, JSON.stringify(status));
+    } catch (e) {
+      Utils.log("保存任务状态失败: " + e);
+    }
+  },
+
+  // 检查任务今天是否已完成
+  isCompletedToday: function() {
+    if (!this.lastCompletedDate) {
+      return false;
+    }
+    var today = new Date().toLocaleDateString();
+    return this.lastCompletedDate === today;
+  },
+
   // 检查是否在赚钱页面
   checkInMoneyPage: function () {
     Utils.log("检查是否在赚钱页面");
@@ -173,6 +220,7 @@ BaseTask.prototype = {
   // 执行任务后的清理工作
   cleanup: function () {
     this.lastExecuteTime = new Date().getTime();
+    this.saveTaskStatus(); // 保存任务完成状态
     PopupHandler.detectAndHandlePopups();
     return true;
   },

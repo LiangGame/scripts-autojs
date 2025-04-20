@@ -81,6 +81,17 @@ TaskManager.prototype.executeTask = function (taskName, maxRuns) {
     return;
   }
 
+  // 检查任务今天是否已完成
+  if (task.isCompletedToday()) {
+    Utils.log("任务今天已完成: " + taskName);
+    // 切换到下一个任务
+    var nextTaskName = this.switchToAnotherTask(taskName);
+    if (nextTaskName) {
+      this.executeTask(nextTaskName, this.tasks[nextTaskName].maxRuns);
+    }
+    return;
+  }
+
   Utils.log("开始执行任务: " + taskName + "; maxRuns: " + maxRuns);
 
   var runs = 0;
