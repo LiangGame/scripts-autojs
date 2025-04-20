@@ -43,6 +43,12 @@ const config = {
             enabled: true,
             maxRuns: 1,
             interval: 3000
+        },
+        // 任务5: 评论任务
+        task5: {
+            enabled: true,
+            maxRuns: 1,
+            interval: 3000
         }
     }
 };
@@ -1314,6 +1320,9 @@ Task3.execute = function() {
     if (!likeElement) {
         log("未找到点赞按钮");
         return false;
+    } else if (!likeElement.visibleToUser() || !isInMiddleRegion(likeElement, middleRegion)) {
+        log("点赞按钮不在中间区域，尝试重新查找");
+        likeElement = id("com.kuaishou.nebula:id/like_element_click_layout").findOne(5000);
     }
     
     // 点击点赞按钮
@@ -1326,6 +1335,7 @@ Task3.execute = function() {
         log("无法获取点赞按钮位置");
         return false;
     }
+    return true;
 };
 
 // 任务4: 收藏任务
@@ -1444,6 +1454,9 @@ Task4.execute = function() {
     if (!collectElement) {
         log("未找到收藏按钮");
         return false;
+    } else if (!collectElement.visibleToUser() || !isInMiddleRegion(collectElement, middleRegion)) {
+        log("收藏按钮不在中间区域，尝试重新查找");
+        collectElement = id("com.kuaishou.nebula:id/click_area_collect").findOne(5000);
     }
     
     // 点击收藏按钮
@@ -1456,6 +1469,191 @@ Task4.execute = function() {
         log("无法获取收藏按钮位置");
         return false;
     }
+    return true;
+};
+
+// 任务5: 评论任务
+var Task5 = new BaseTask("评论任务", "评论指定数量的作品");
+
+// 重写execute方法
+Task5.execute = function() {
+    log("开始执行评论任务");
+    
+    // 检查是否在赚钱页面
+    if (!this.isInMoneyPage) {
+        log("未在赚钱页面，尝试进入");
+        if (!enterMoneyPage()) {
+            log("进入赚钱页面失败");
+            return false;
+        }
+        this.isInMoneyPage = true;
+    }
+    
+    // 查找"评论x个作品"文本
+    log("查找'评论x个作品'文本");
+    // 获取屏幕尺寸
+    let screenWidth = device.width;
+    let screenHeight = device.height;
+    // 定义中间区域的范围（屏幕中间60%的区域）
+    let middleRegion = {
+        left: screenWidth * 0.2,
+        top: screenHeight * 0.2,
+        right: screenWidth * 0.8,
+        bottom: screenHeight * 0.8
+    };
+    
+    // 尝试查找包含"评论"和"作品"的文本
+    var commentTaskText = textMatches(/评论.*作品/).findOne();
+    if (commentTaskText.visibleToUser() && isInMiddleRegion(commentTaskText, middleRegion)) {
+        log("找到评论任务文本");
+    } else {
+        // 如果没找到，尝试滑动查找
+        log("未找到评论任务文本，尝试滑动查找");
+        for (var i = 0; i < 3; i++) {
+            randomSwipe(device.width / 2, device.height * 0.7, device.width / 2, device.height * 0.3, 500);
+            randomSleep(1000, 2000);
+            
+            commentTaskText = textMatches(/评论.*作品/).findOne();
+            if (commentTaskText.visibleToUser() && isInMiddleRegion(commentTaskText, middleRegion)) {
+                log("滑动后找到可见的评论任务文本");
+                break;
+            }
+        }
+    }
+    
+    if (!commentTaskText) {
+        log("未找到可见的评论任务文本");
+        return false;
+    }
+    
+    // 检查任务是否已完成
+    var completedText = text("已完成").findOne(1000);
+    if (completedText) {
+        // 检查"已完成"是否在"评论x个作品"的父元素中
+        var parent = findInParents(commentTaskText, text("已完成"), 3);
+        if (parent && parent.length > 0) {
+            log("评论任务已完成");
+            return true;
+        }
+    }
+    
+    // 查找"去评论"按钮
+    log("查找'去评论'按钮");
+    var commentButton = null;
+    
+    // 尝试在"评论x个作品"的父元素中查找"去评论"按钮
+    var commentButtons = findInParents(commentTaskText, text("去评论"), 3);
+    if (commentButtons && commentButtons.length > 0) {
+        log("找到去评论按钮");
+        commentButton = commentButtons[0];
+    } else {
+        // 如果没找到，尝试在"评论x个作品"的右侧查找
+        log("在父元素中未找到去评论按钮，尝试在右侧查找");
+        
+        // 获取"评论x个作品"的位置
+        var taskBounds = commentTaskText.bounds();
+        if (taskBounds) {
+            // 在"评论x个作品"右侧区域查找"去评论"按钮
+            var rightButtons = text("去评论").find();
+            for (var i = 0; i < rightButtons.length; i++) {
+                var btnBounds = rightButtons[i].bounds();
+                if (btnBounds && btnBounds.centerX() > taskBounds.centerX()) {
+                    log("在右侧找到去评论按钮");
+                    commentButton = rightButtons[i];
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (!commentButton) {
+        log("未找到去评论按钮");
+        return false;
+    }
+    
+    // 点击"去评论"按钮
+    log("点击去评论按钮");
+    var bounds = commentButton.bounds();
+    if (bounds) {
+        randomClick(bounds.centerX(), bounds.centerY());
+        randomSleep(5000, 8000);
+    } else {
+        log("无法获取按钮位置");
+        return false;
+    }
+    
+    // 查找并点击评论按钮
+    log("查找评论按钮");
+    var commentElement = id("com.kuaishou.nebula:id/comment_element_click_layout").findOne(5000);
+    if (!commentElement) {
+        log("未找到评论按钮");
+        return false;
+    } else if (!commentElement.visibleToUser() || !isInMiddleRegion(commentElement, middleRegion)) {
+        log("评论按钮不在中间区域，尝试重新查找");
+        commentElement = id("com.kuaishou.nebula:id/comment_element_click_layout").findOne(5000);
+    }
+    
+    // 点击评论按钮
+    log("点击评论按钮");
+    bounds = commentElement.bounds();
+    if (bounds) {
+        randomClick(bounds.centerX(), bounds.centerY());
+        randomSleep(2000, 3000);
+    } else {
+        log("无法获取评论按钮位置");
+        return false;
+    }
+    
+    // 查找评论输入框
+    log("查找评论输入框");
+    var commentInput = id("com.kuaishou.nebula:id/editor_holder_text").findOne(5000);
+    if (!commentInput) {
+        log("未找到评论输入框");
+        return false;
+    }
+    
+    // 点击评论输入框
+    log("点击评论输入框");
+    bounds = commentInput.bounds();
+    if (bounds) {
+        randomClick(bounds.centerX(), bounds.centerY());
+        randomSleep(1000, 2000);
+    } else {
+        log("无法获取评论输入框位置");
+        return false;
+    }
+    
+    // 输入评论内容
+    log("输入评论内容");
+    // 随机评论内容列表
+    var commentTexts = [
+        "真不错", "支持一下", "666", "加油", "继续努力", 
+        "很棒", "喜欢", "赞", "不错不错", "继续加油"
+    ];
+    var randomComment = commentTexts[Math.floor(Math.random() * commentTexts.length)];
+    setText(randomComment);
+    randomSleep(1000, 2000);
+    
+    // 查找发送按钮
+    log("查找发送按钮");
+    var sendButton = id("com.kuaishou.nebula:id/finish_button_wrapper").findOne(3000);
+    if (!sendButton) {
+        log("未找到发送按钮");
+        return false;
+    }
+    
+    // 点击发送按钮
+    log("点击发送按钮");
+    bounds = sendButton.bounds();
+    if (bounds) {
+        randomClick(bounds.centerX(), bounds.centerY());
+        randomSleep(2000, 3000);
+    } else {
+        log("无法获取发送按钮位置");
+        return false;
+    }
+    
+    return true;
 };
 
 // ===================== 任务管理器 =====================
@@ -1467,7 +1665,8 @@ var TaskManager = {
         watchAds: TaskWatchAds,
         task2: Task2,
         task3: Task3,
-        task4: Task4
+        task4: Task4,
+        task5: Task5
     },
     
     // 存储所有运行中的线程，使用对象来关联任务名称和线程
