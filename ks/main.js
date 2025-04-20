@@ -69,18 +69,6 @@ function main() {
     exit();
   }
 
-  // 启动应用
-  if (!App.launch()) {
-    toast("无法启动快手极速版，请检查应用是否安装");
-    exit();
-  }
-
-  // 检查登录状态
-  if (!App.checkLogin()) {
-    toast("请先登录快手极速版");
-    exit();
-  }
-
   // 创建任务实例
   createTasks();
 
