@@ -12,13 +12,13 @@ module.exports = {
   tasks: {
     // 任务1: 看广告得金币
     watchAds: {
-      enabled: false,
+      enabled: true,
       maxRuns: 500,
       interval: 2000,
     },
     // 任务2: 刷广告视频赚金币
     task2: {
-      enabled: false,
+      enabled: true,
       maxRuns: 50,
       interval: 3000,
     },
@@ -30,13 +30,13 @@ module.exports = {
     },
     // 任务4: 收藏任务
     task4: {
-      enabled: false,
+      enabled: true,
       maxRuns: 1,
       interval: 3000,
     },
     // 任务5: 评论任务
     task5: {
-      enabled: false,
+      enabled: true,
       maxRuns: 1,
       interval: 3000,
     },

@@ -94,6 +94,28 @@ TaskManager.prototype.executeTask = function (taskName, maxRuns) {
 
   Utils.log("开始执行任务: " + taskName + "; maxRuns: " + maxRuns);
 
+  // 重启应用
+  Utils.log("重启应用以确保干净状态");
+  
+  // 再启动应用
+  Utils.log("启动应用");
+  if (!App.launch()) {
+    Utils.log("无法启动快手极速版，请检查应用是否安装");
+    return;
+  }
+
+  // 检查登录状态
+  if (!App.checkLogin()) {
+    Utils.log("请先登录快手极速版");
+    return;
+  }
+
+  // 进入赚钱页面
+  if (!App.enterMoneyPage()) {
+    Utils.log("无法进入赚钱页面");
+    return;
+  }
+
   var runs = 0;
   while (runs < maxRuns) {
     if (task.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {

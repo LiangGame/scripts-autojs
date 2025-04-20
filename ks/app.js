@@ -4,6 +4,11 @@ var Utils = require("./utils.js");
 var App = {
   // 启动快手极速版
   launch: function () {
+    // 先关闭应用
+    Utils.log("关闭应用");
+    app.close("com.kuaishou.nebula");
+    Utils.randomSleep(5000, 8000); // 等待应用完全关闭
+
     Utils.log("启动快手极速版");
     if (currentPackage().includes("com.kuaishou.nebula")) {
       Utils.log("快手极速版已经在运行中");
